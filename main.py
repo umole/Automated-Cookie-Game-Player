@@ -1,30 +1,60 @@
-import requests
-from bs4 import BeautifulSoup
-import smtplib
+import selenium
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
+import time
 
 
-response = requests.get("https://www.amazon.com/Apple-MacBook-13-3in-MLH12LL-Touch-Bar/dp/B08M16712F/ref=sr_1_3?crid=1TT237UH6FVB4&keywords=macbook+pro&qid=1665260772&qu=eyJxc2MiOiI2LjM5IiwicXNhIjoiNi40OCIsInFzcCI6IjUuOTQifQ%3D%3D&sprefix=mac%2Caps%2C393&sr=8-3",
-             headers={"Accept-Language": "en-US,en;q=0.9", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                                                                          "(KHTML, like Gecko) Chrome/102.0.5005.124 Safari/537.36 Edg/102.0.1245.44", })
-amazon = response.text
-soup = BeautifulSoup(amazon, 'html.parser')
-price = soup.find_all(name="span", class_="a-offscreen")[0].get_text()
-price_value = float(price[1:])
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+driver.get("http://orteil.dashnet.org/experiments/cookie/")
+cookie = driver.find_element(By.ID, "cookie")
 
-MY_EMAIL = "myemail@gmail.com"
-EMAIL_PASS = "xxxxxxxxxxxxxxx"
-TARGET_PRICE = 600.00
 
-if price_value <= TARGET_PRICE:
-    with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
-        connection.starttls()
-        result = connection.login(user=MY_EMAIL, password=EMAIL_PASS)
-        connection.sendmail(from_addr=MY_EMAIL,
-                            to_addrs="ferdgm@yahoo.com",
-                            msg="subject: Amazon Price Alert \n\nThe price of your favourite product just hit "
-                                f"${price_value}.Would you like to buy it now?\nHere is the link to purchase it"
-                                f"https://www.amazon.com/Apple-MacBook-13-3in-MLH12LL-Touch-Bar/dp/B08M16712F/ref=sr_1_3?crid=1TT237UH6FVB4&keywords=macbook+pro&qid=1665260772&qu=eyJxc2MiOiI2LjM5IiwicXNhIjoiNi40OCIsInFzcCI6IjUuOTQifQ%3D%3D&sprefix=mac%2Caps%2C393&sr=8-3")
+available_lifelines = driver.find_elements(By.CSS_SELECTOR, "#store div")
+life_line = driver.find_elements(By.CSS_SELECTOR, "#store div b")
+life_prices = []
+try:
+    for life in life_line:
+        life_price = life.text.split("-")[1]
+        life_prices.append(int(life_price.strip(" ").replace(",", "")))
 
+except IndexError:
+    pass
+
+
+id_of_div = [element.get_attribute("id") for element in driver.find_elements(By.CSS_SELECTOR, "#store div")]
+print(id_of_div)
+
+time_on = True
+time_out = time.time() + 5
+while time.time() < time.time() + 60*5:
+    try:
+        cookie.click()
+        if time.time() > time_out:
+            coupon = int(driver.find_element(By.ID, "money").text.replace(",", ""))
+            lives_less_than_coupon = [x for x in life_prices if x < coupon]
+            print(lives_less_than_coupon)
+            if not lives_less_than_coupon:
+                pass
+            else:
+                price_index = life_prices.index(max(lives_less_than_coupon))
+                print(price_index)
+                available_lifelines[price_index].click()
+            time_out += 5
+    except:
+        pass
+
+
+
+
+
+
+
+
+
+
+#print(life_prices)
 
 
 
